@@ -2,67 +2,10 @@
 
 %[vertices faces] = readSTL('chunk10.stl');
 [vertices faces] = readSTL('chunk3.stl');
+VV = fv2vv(faces(randperm(size(faces,1)),:), vertices);
 
 figure(120); clf
 patch('Faces', faces, 'Vertices', vertices, 'FaceColor', 'r')
-view(3)
-axis image vis3d
-
-%%
-
-VV = fv2vv(faces(randperm(size(faces,1)),:), vertices);
-%VV = fv2vv(faces, vertices);
-
-%% Test selective splitting
-
-splitFlags = vertices(:,3) < -50;
-%splitFlags = vertices(:,3) < 250;
-A = vv2adjacency(VV);
-adjFlags = (A^1)*splitFlags > 0;
-
-%%
-
-[VV2, ~, vertices2] = loopRefine(VV, vertices, adjFlags);
-f2 = vv2fv(VV2);
-
-
-%%
-figure(1); clf
-plotVV(VV2, vertices2, 'b-')
-
-%%
-figure(120); clf
-subplot(121)
-plotVV(VV, vertices, 'b-')
-hold on
-plot3(vertices(adjFlags,1), vertices(adjFlags,2), vertices(adjFlags,3),...
-    'ro', 'LineWidth', 3)
-view(3); axis image vis3d
-
-subplot(122)
-plotVV(VV2, vertices2, 'b-')
-hold on
-plotVV(VV, vertices, '-', 'Color', [0.8 0.8 1])
-view(3); axis image vis3d
-%%
-
-%%
-
-figure(9); clf
-plotVV(VV, vertices, 'b-', 'LineWidth', 2)
-[VV2, ~, vertices2] = loopRefine(VV, vertices);
-[VV2, ~, vertices2] = loopRefine(VV2, vertices2);
-[VV2, ~, vertices2] = loopRefine(VV2, vertices2);
-
-hold on
-plotVV(VV2, vertices2, 'r--')
-
-%%
-
-faces2 = vv2fv(VV);
-
-figure(20); clf
-patch('Faces', faces2, 'Vertices', vertices, 'FaceColor', 'g')
 view(3)
 axis image vis3d
 
@@ -76,12 +19,16 @@ for ii = 1:6
     %axis image vis3d
     
     faces2 = vv2fv(VV2);
-    figure(ii+10); clf
+    %figure(ii+10); clf
+    figure(1); clf
+    pause
+    fprintf('Patch time!\n');
     flatPatch('Faces', faces2, 'Vertices', vertices2, 'FaceColor', 'r');
     hold on
     plotVV(VV, vertices, 'b--')
     view(3); axis image vis3d
     camlight right
+    fprintf('Pause time!\n');
     
     pause
     [VV2 vertices2] = loopSubdivision(VV2, vertices2);
@@ -96,7 +43,6 @@ end
 % One approach then: mark a vertex as "split adjacent" or something?  Or
 % split every edge next to a marked vertex?  I'm using a VV data structure
 % so I gotta make this make sense for me.
-
 
 %% Test mesh.
 
@@ -187,6 +133,7 @@ view(2); axis xy image
 
 %%
 [vertices faces] = flatRegularMesh(5);
+vertices(:,3) = sin(2*(vertices(:,1) + vertices(:,2)));
 VV = fv2vv(faces, vertices);
 
 A = vv2adjacency(VV);
@@ -209,6 +156,16 @@ view(2); axis xy image
 hold on
 plotVV(VV2, v2, 'g-', 'LineWidth', 2)
 plotVV(VV1, v1, 'r-', 'LineWidth', 3)
+
+[VVr, ~, vr] = loopRefine(VV, vertices, ring1 | selectionFlags);
+plotVV(VVr, vr, 'k-');
+
+%% Nicer plot!
+
+fvr = vv2fv(VVr);
+figure(10); clf
+patch('Faces', fvr, 'Vertices', vr, 'FaceColor', 'g', 'EdgeAlpha', 0.1)
+
 %% Test truncation...
 
 [vertices faces] = flatRegularMesh(3);
@@ -216,3 +173,16 @@ VV = fv2vv(faces, vertices);
 keep = [6:9, 2];
 
 [VV2 vertices2] = truncateVV(VV, vertices, keep);
+
+%% Make a scrambled-up mesh
+[vertices f] = flatRegularMesh(5);
+VV = fv2vv(f,vertices);
+vertices = vertices + rand(size(vertices)) - 0.5;
+vertices = vertices.^2;
+
+figure(1); clf
+plotVV(VV, vertices, 'b-');
+view(2);
+axis image
+
+%%

@@ -1,4 +1,5 @@
-function [VV2 T vertices2 inheritance] = loopRefine(VV, vertices)
+function [VV2 T vertices2 inheritance] = loopRefine(VV, vertices, ...
+    splitAdjacentEdgeFlags)
 % [outVV T refinedVertices inheritance] = loopRefine(VV, vertices)
 %
 % Mesh refinement step in Loop subdivision.  Does not perturb
@@ -20,29 +21,18 @@ function [VV2 T vertices2 inheritance] = loopRefine(VV, vertices)
 numOriginalVertices = size(VV,1);
 assert(size(vertices,1) == numOriginalVertices);
 
-%if nargin < 3
-%    splitAdjacentEdgeFlags = ones(numOriginalVertices, 1);
-%end
+if nargin < 3
+    splitAdjacentEdgeFlags = ones(numOriginalVertices, 1);
+end
 
 numNeighbors = numVVNeighbors(VV);
 totalNeighbors = sum(numNeighbors);
 assert(rem(totalNeighbors,2) == 0);
 numEdges = totalNeighbors/2;
 
-%% Helper functions.
+%% A helper function.
 
-% Helper methods for incrementing indices in wraparound fashion, 1-based.
-circPrev = @(n, nMax) 1 + mod(n-2, nMax);
-circNext = @(n, nMax) 1 + mod(n, nMax); % (n+1) - 1 == n.
-findIndex = @(iFindMe, indices) find(indices == iFindMe, 1);
-
-next = @(v0, v1, myVV) myVV(v1, circPrev(...
-    findIndex(v0, myVV(v1,:)), nnz(myVV(v1,:))));
-prev = @(v0, v1, myVV) myVV(v0, circNext(...
-    findIndex(v1, myVV(v0,:)), nnz(myVV(v0,:))));
-isBoundary = @(u,v) next(u,v,VV) ~= prev(u,v,VV);
-
-vertexOnBoundary = @(v) any(arrayfun(@(w) full(isBoundary(v,w)), ...
+vertexOnBoundary = @(v) any(arrayfun(@(w) full(isEdgeOnBoundary(v,w,VV)), ...
     full(VV(v, 1:numNeighbors(v)))));
 
 %% Add a vertex at the midpoint of each edge!
@@ -62,7 +52,7 @@ for jj = 1:numNeighbors(v0)
     v1 = VV(v0,jj);
         
     if v0 < v1 % this step prevents processing an edge twice
-    %if all(splitAdjacentEdgeFlags([v0 v1]))
+    if all(splitAdjacentEdgeFlags([v0 v1]))
         
         % Split the edge!
         vertices2(vNew,:) = 0.5*(vertices(v0,:) + vertices(v1,:));
@@ -83,7 +73,7 @@ for jj = 1:numNeighbors(v0)
         inheritance(vNew, [1 2]) = [v0 v1];
         
         vNew = vNew + 1;
-    %end
+    end
     end
 end
 end
@@ -148,7 +138,7 @@ for vNew = numOriginalVertices+1:size(vertices2,1)
 %     printVert(v1);
     
     % First handle the triangle that was bounded by (v0 v1)
-    if isBoundary(v0, v1)
+    if isEdgeOnBoundary(v0, v1, VV)
         neighbors01 = v1;
         boundaryFlag = true;
         
@@ -162,8 +152,8 @@ for vNew = numOriginalVertices+1:size(vertices2,1)
         % v0-vNew-v1 is a boundary, meaning it's empty to the left.
         % do nothing.
     else
-        vMidNext = next(vNew, v1, VV2);
-        vMidPrev = prev(v0, vNew, VV2);
+        vMidNext = nextInTriangle(vNew, v1, VV2);
+        vMidPrev = prevInTriangle(v0, vNew, VV2);
         
         if isOld(vMidNext) % it's a T-vertex
             neighbors01 = [v1 vMidNext];
@@ -172,7 +162,7 @@ for vNew = numOriginalVertices+1:size(vertices2,1)
             end
             
             N = numNeighbors2(vMidNext);
-            here = findIndex(v1, VV2(vMidNext,:));
+            here = find(v1 == VV2(vMidNext,:), 1);
             VV2(vMidNext, 1:N+1) = [VV2(vMidNext, 1:here-1), vNew, ...
                 VV2(vMidNext, here:N)];
             numNeighbors2(vMidNext) = N + 1;
@@ -183,7 +173,7 @@ for vNew = numOriginalVertices+1:size(vertices2,1)
     end
     
     % Next handle the triangle that was bounded by (v1 v0)
-    if isBoundary(v1, v0)
+    if isEdgeOnBoundary(v1, v0, VV)
         neighbors10 = v0;
         boundaryFlag = true;
         
@@ -198,8 +188,8 @@ for vNew = numOriginalVertices+1:size(vertices2,1)
         % do nothing.
     else
         
-        vMidNext = next(vNew, v0, VV2);
-        vMidPrev = prev(v1, vNew, VV2);
+        vMidNext = nextInTriangle(vNew, v0, VV2);
+        vMidPrev = prevInTriangle(v1, vNew, VV2);
         
         if isOld(vMidNext) % it's a T-vertex
             neighbors10 = [v0 vMidNext];
@@ -208,7 +198,7 @@ for vNew = numOriginalVertices+1:size(vertices2,1)
             end
             
             N = numNeighbors2(vMidNext);
-            here = findIndex(v0, VV2(vMidNext,:));
+            here = find(v0 == VV2(vMidNext,:), 1);
             VV2(vMidNext, 1:N+1) = [VV2(vMidNext, 1:here-1), vNew, ...
                 VV2(vMidNext, here:N)];
             numNeighbors2(vMidNext) = N + 1;
@@ -236,7 +226,7 @@ for vNew = numOriginalVertices+1:size(vertices2,1)
         T(vNew, [v0 v1]) = 0.5;
     else
         T(vNew, [v0 v1]) = 0.375;
-        T(vNew, [next(v1, v0, VV) next(v0, v1, VV)]) = 0.125;
+        T(vNew, [nextInTriangle(v1, v0, VV) nextInTriangle(v0, v1, VV)]) = 0.125;
     end
 end
 
