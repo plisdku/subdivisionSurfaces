@@ -1,12 +1,21 @@
-function [VV2 T vertices2] = loopRefine(VV, vertices)
-% [outVV T refinedVertices] = loopRefine(VV, vertices)
+function [VV2 T vertices2 inheritance] = loopRefine(VV, vertices)
+% [outVV T refinedVertices inheritance] = loopRefine(VV, vertices)
 %
 % Mesh refinement step in Loop subdivision.  Does not perturb
 % vertices--only handles the refinement step!  (New mid-edge vertices are
 % just at the midpoints of edges, then.)
 %
+% outVV is the refined vertex-vertex topology.
+%
 % T is the matrix of weights to perturb the vertices by.  To accomplish
 % the perturbation you can set vertices2 = T*vertices yourself.
+%
+% vertices2 contains an unsmoothed refined set of vertices.
+%
+% inheritance is a sparse matrix containing the pairs of original vertex
+% indices that gave rise to each split vertex.  inheritance(vNew) = [v1 v2]
+% means that vNew split the edge from v1 to v2.
+% 
 
 numOriginalVertices = size(VV,1);
 assert(size(vertices,1) == numOriginalVertices);
@@ -18,8 +27,7 @@ assert(size(vertices,1) == numOriginalVertices);
 numNeighbors = numVVNeighbors(VV);
 totalNeighbors = sum(numNeighbors);
 assert(rem(totalNeighbors,2) == 0);
-
-iNew = numOriginalVertices + 1; % index of next new vertex!
+numEdges = totalNeighbors/2;
 
 %% Helper functions.
 
@@ -42,6 +50,11 @@ vertexOnBoundary = @(v) any(arrayfun(@(w) full(isBoundary(v,w)), ...
 vertices2 = vertices;
 VV2 = VV;
 
+inheritance = spalloc(numOriginalVertices + numEdges, 2, ...
+    2*numEdges);
+
+vNew = numOriginalVertices + 1; % index of next new vertex!
+
 % Iterate over edges:
 %iSplit = find(splitAdjacentEdgeFlags);
 for v0 = 1:numOriginalVertices
@@ -52,22 +65,24 @@ for jj = 1:numNeighbors(v0)
     %if all(splitAdjacentEdgeFlags([v0 v1]))
         
         % Split the edge!
-        vertices2(iNew,:) = 0.5*(vertices(v0,:) + vertices(v1,:));
-        vMid = iNew;
-        iNew = iNew + 1;
+        vertices2(vNew,:) = 0.5*(vertices(v0,:) + vertices(v1,:));
         
         % Edge is now (u w v).
         %  u replaces v with w
         %  v replaces u with w
         %  w adds u and v (either order is ok, but I'll go v1-v0)
         
-        VV2(v0, VV2(v0,:) == v1) = vMid; % v0 replaces v1 with vMid
-        VV2(v1, VV2(v1,:) == v0) = vMid; % v1 replaces v0 with vMid
-        VV2(vMid, 1) = v1; % vMid adds v0
-        VV2(vMid, 2) = v0; % vMid adds v1
+        VV2(v0, VV2(v0,:) == v1) = vNew; % v0 replaces v1 with vMid
+        VV2(v1, VV2(v1,:) == v0) = vNew; % v1 replaces v0 with vMid
+        VV2(vNew, 1) = v1; % vMid adds v0
+        VV2(vNew, 2) = v0; % vMid adds v1
         
         % and that concludes the addition of vertices; it's no longer a
         % triangular mesh though!
+        
+        inheritance(vNew, [1 2]) = [v0 v1];
+        
+        vNew = vNew + 1;
     %end
     end
 end
