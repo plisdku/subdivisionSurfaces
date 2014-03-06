@@ -100,7 +100,7 @@ end
 
 %% Test mesh.
 
-[vertices faces] = flatRegularMesh(5);
+[vertices faces] = flatRegularMesh(3);
 VV = fv2vv(faces, vertices);
 
 vertices(:,3) = sin(2*(vertices(:,1) + vertices(:,2)));
@@ -109,7 +109,7 @@ vertices(:,3) = sin(2*(vertices(:,1) + vertices(:,2)));
 
 crease = [1:4, 5:5:20, 25:-1:22, 21:-5:1];
 
-creaseB = [8 12 17];
+creaseB = [17];
 
 %%
 [VV2 vertices2 T creaseB2 crease2] = loopSubdivision(VV, vertices, creaseB, crease);
@@ -174,9 +174,45 @@ for tt = 1:100
 end
 close(movObj);
 
-
-
 %%
+
 [VV2, ~, vertices2] = loopRefine(VV2, vertices2);
 plotVV(VV2, vertices2);
 
+%%
+
+plotVV(VV, vertices, 'b-')
+hold on
+view(2); axis xy image
+
+%%
+[vertices faces] = flatRegularMesh(5);
+VV = fv2vv(faces, vertices);
+
+A = vv2adjacency(VV);
+numVertices = size(VV,1);
+
+refineMe = 13;
+selectionFlags = zeros(numVertices,1);
+selectionFlags(refineMe) = 1;
+
+ring1 = A*selectionFlags > 0;
+ring2 = A*ring1 > 0;
+
+[VV1 v1] = truncateVV(VV, vertices, ring1);
+[VV2 v2] = truncateVV(VV, vertices, ring2);
+
+figure(1); clf
+plotVV(VV, vertices, 'b-');
+view(2); axis xy image
+
+hold on
+plotVV(VV2, v2, 'g-', 'LineWidth', 2)
+plotVV(VV1, v1, 'r-', 'LineWidth', 3)
+%% Test truncation...
+
+[vertices faces] = flatRegularMesh(3);
+VV = fv2vv(faces, vertices);
+keep = [6:9, 2];
+
+[VV2 vertices2] = truncateVV(VV, vertices, keep);

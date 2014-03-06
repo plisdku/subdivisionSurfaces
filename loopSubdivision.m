@@ -42,7 +42,9 @@ for cc = 1:numCreases
     
     % Set T for the old vertices
     
-    if crease(1) == crease(end) % boundary loop
+    if numel(crease) == 1 % hard point
+        Told = sparse(crease, crease, 1, numVertices, numOriginalVertices);
+    elseif crease(1) == crease(end) % boundary loop
         Told = sparse(crease([1:end-1,1:end-1,1:end-1]), ...
             crease([end-1, 1:end-2, 1:end-1, 2:end-1, 1]), ...
             [0.125*ones(numel(crease)-1,1), ...
@@ -61,8 +63,6 @@ for cc = 1:numCreases
              numVertices, numOriginalVertices);
         
         Told = Told_ends + Told_mid;
-        %Told = sparse(crease, crease, ones(size(crease)), ...
-        %    numVertices, numOriginalVertices);
     end
     
     T = T + Tnew + Told;
