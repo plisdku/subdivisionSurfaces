@@ -1,4 +1,4 @@
-function [VV2 T vertices2] = loopRefine(VV, vertices, splitAdjacentEdgeFlags)
+function [VV2 T vertices2] = loopRefine(VV, vertices)
 % [outVV T refinedVertices] = loopRefine(VV, vertices)
 %
 % Mesh refinement step in Loop subdivision.  Does not perturb
@@ -11,9 +11,9 @@ function [VV2 T vertices2] = loopRefine(VV, vertices, splitAdjacentEdgeFlags)
 numOriginalVertices = size(VV,1);
 assert(size(vertices,1) == numOriginalVertices);
 
-if nargin < 3
-    splitAdjacentEdgeFlags = ones(numOriginalVertices, 1);
-end
+%if nargin < 3
+%    splitAdjacentEdgeFlags = ones(numOriginalVertices, 1);
+%end
 
 numNeighbors = numVVNeighbors(VV);
 totalNeighbors = sum(numNeighbors);
@@ -49,7 +49,7 @@ for jj = 1:numNeighbors(v0)
     v1 = VV(v0,jj);
         
     if v0 < v1 % this step prevents processing an edge twice
-    if all(splitAdjacentEdgeFlags([v0 v1]))
+    %if all(splitAdjacentEdgeFlags([v0 v1]))
         
         % Split the edge!
         vertices2(iNew,:) = 0.5*(vertices(v0,:) + vertices(v1,:));
@@ -68,7 +68,7 @@ for jj = 1:numNeighbors(v0)
         
         % and that concludes the addition of vertices; it's no longer a
         % triangular mesh though!
-    end
+    %end
     end
 end
 end
