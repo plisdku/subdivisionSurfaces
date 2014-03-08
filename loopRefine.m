@@ -1,5 +1,5 @@
 function [VV2 T vertices2 inheritance] = loopRefine(VV, vertices, ...
-    splitAdjacentEdgeFlags)
+    refineVertices)
 % [outVV T refinedVertices inheritance] = loopRefine(VV, vertices)
 %
 % Mesh refinement step in Loop subdivision.  Does not perturb
@@ -16,14 +16,24 @@ function [VV2 T vertices2 inheritance] = loopRefine(VV, vertices, ...
 % inheritance is a sparse matrix containing the pairs of original vertex
 % indices that gave rise to each split vertex.  inheritance(vNew) = [v1 v2]
 % means that vNew split the edge from v1 to v2.
+%
+% loopRefine(VV, vertices, refineVertices) will restrict the refinement
+% region, as for adaptive refinement.
 % 
 
 numOriginalVertices = size(VV,1);
 assert(size(vertices,1) == numOriginalVertices);
 
 if nargin < 3
-    splitAdjacentEdgeFlags = ones(numOriginalVertices, 1);
+    refineVertices = 1:numOriginalVertices;
+    refineNeighborhood = refineVertices;
+else
+    refineNeighborhood = union(refineVertices, ...
+        neighborhood(refineVertices, VV));
 end
+
+splitAdjacentEdgeFlags = zeros(numOriginalVertices,1);
+splitAdjacentEdgeFlags(refineNeighborhood) = true;
 
 numNeighbors = numVVNeighbors(VV);
 totalNeighbors = sum(numNeighbors);
@@ -88,32 +98,38 @@ checkSymmetry(VV2);
 %  numOriginalVertices + totalNeighbors  ... (for the old vertices)
 % ... + 4*numNewVertices (for the new vertices)
 %
-% but it might end up smaller if the mesh has a boundary.
+% but it might end up smaller if the mesh has a boundary or when it's only
+% partially refined.
+
 
 % First handle the original vertices.
 
 numVertices = size(vertices2, 1);
 numNewVertices = numVertices - numOriginalVertices;
 
+perturbedVertices = union(refineVertices, ...
+    neighborhood(refineVertices, VV2, 1, 2));
+perturbFlags = zeros(numVertices,1);
+perturbFlags(perturbedVertices) = true;
+
 T = spalloc(numVertices, numOriginalVertices, ...
     numOriginalVertices + totalNeighbors + 4*numNewVertices);
 
 for vOld = 1:numOriginalVertices
-    vNeighbors = VV(vOld, VV(vOld,:) ~= 0);
-    
-    neighborWeight = loopWeights(numel(vNeighbors));
-    selfWeight = 1 - neighborWeight*numel(vNeighbors);
-    
-    if vertexOnBoundary(vOld)
+    if vertexOnBoundary(vOld) || ~perturbFlags(vOld)
         T(vOld, vOld) = 1.0; % don't move off boundary.
     else
+        vNeighbors = VV(vOld, VV(vOld,:) ~= 0);
+
+        neighborWeight = loopWeights(numel(vNeighbors));
+        selfWeight = 1 - neighborWeight*numel(vNeighbors);
+
         T(vOld, vOld) = selfWeight;
         T(vOld, vNeighbors) = neighborWeight;
     end
 end
 
 %% Now add connections to VV2 to make it a triangulation again.
-
 
 printVert = @(ii) fprintf('Vertex %i is at %i %i %i\n', full(ii), ...
     full(vertices2(ii,1)), full(vertices2(ii,2)), full(vertices2(ii,3)));

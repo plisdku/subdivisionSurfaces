@@ -10,8 +10,8 @@ allVerts = 1:numOriginalVertices;
 
 keepThese = sort(allVerts(keep));
 
-deleteThese = allVerts;
-deleteThese(keep) = [];
+%deleteThese = allVerts;
+%deleteThese(keep) = [];
 
 %% Remove neighbor references TO vertices to delete.
 % Also remove rows that I need to delete.
@@ -26,8 +26,10 @@ ssKeep = ss(keepFlags);
 lookupTable = zeros(1, numOriginalVertices);
 lookupTable(keepThese) = 1:numel(keepThese);
 
-VV2 = sparse(lookupTable(iiKeep), jjKeep, lookupTable(ssKeep));
+VV2 = sparse(lookupTable(iiKeep), jjKeep, lookupTable(ssKeep), ...
+    numel(keepThese), 100);
 
+assert(size(VV2,1) == numel(keepThese));
 %% Remove non-trailing zeros from rows of VV2.
 
 for rr = 1:size(VV2,1)
