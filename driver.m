@@ -174,15 +174,95 @@ keep = [6:9, 2];
 
 [VV2 vertices2] = truncateVV(VV, vertices, keep);
 
-%% Make a scrambled-up mesh
-[vertices f] = flatRegularMesh(5);
+%% Make a distorted mesh and optimize it
+[vertices f] = flatRegularMesh(10);
 VV = fv2vv(f,vertices);
-vertices = vertices + rand(size(vertices)) - 0.5;
+vertices(:,3) = 4*(sin(2*(vertices(:,1) + vertices(:,2))));
+vertices = vertices + 0.25*(rand(size(vertices)) - 0.5);
 vertices = vertices.^2;
+
+[VV vertices] = loopSubdivision(VV, vertices);
 
 figure(1); clf
 plotVV(VV, vertices, 'b-');
 view(2);
-axis image
+axis normal
+
+VV2 = optimizeVVFaces(VV, vertices);
+
+figure(2); clf
+plotVV(VV2, vertices, 'b-');
+view(2);
+axis normal
+
+%% Optimize a more difficult mesh
+
+[vertices faces] = readSTL('chunk3.stl');
+VV = fv2vv(faces, vertices);
+
+%%
+
+[VV vertices] = loopSubdivision(VV, vertices);
+faces = vv2fv(VV);
+
+%%
+VV2 = optimizeVVFaces(VV, vertices);
+
+%%
+
+H1 = totalMeanAbsoluteCurvature(VV, vertices);
+H2 = totalMeanAbsoluteCurvature(VV2, vertices);
+fprintf('Total mean absolute curvature went from %f to %f\n', H1, H2);
+
+%%
+f2 = vv2fv(VV2);
+
+figure(1); clf
+flatPatch('Faces', faces, 'Vertices', vertices, 'FaceColor', 'r');
+axis image vis3d;
+view(3)
+camlight right
+
+figure(2); clf
+flatPatch('Faces', f2, 'Vertices', vertices, 'FaceColor', 'r');
+axis image vis3d;
+view(3)
+camlight right
+
+%% Plot the per-vertex curvature
+
+numVertices = size(VV,1);
+Hv = zeros(numVertices,1);
+Kv = Hv;
+
+for vv = 1:numVertices
+    Hv(vv) = vertexMeanCurvature(vv,VV,vertices);
+    Kv(vv) = vertexGaussianCurvature(vv,VV,vertices);
+end
+
+%%
+
+vColor = linspace(0, 1, numVertices)' * [1 1 1];
+
+figure(3); clf
+patch('Faces', faces, 'Vertices', vertices, 'FaceVertexCData', Hv, ...
+    'FaceColor', 'interp', 'EdgeAlpha', 0);
+axis image vis3d;
+view(3);
+colormap hot
+colorbar
+%camlight right
+
+
+%% spokes
+
+[vertices faces] = wagonWheel(4);
+VV = fv2vv(faces, vertices);
+
+VV2 = optimizeVVFaces(VV, vertices);
+
+
+
+
 
 %%
