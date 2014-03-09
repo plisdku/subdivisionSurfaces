@@ -30,15 +30,27 @@ camlight left
 
 %%
 
-Hv = zeros(numVertices, 1);
-for vv = 1:numVertices
-    Hv(vv) = vertexMeanCurvature(vv, VV, vertices);
+selection = num2cell(find(vertices(:,3) < -60));
+[VV2 vertices2] = loopSubdivision(VV, vertices, selection{:});
+
+%%
+
+
+[trVV trv] = truncateVV(VV, vertices, find(vertices(:,3) < 0));
+
+Hv = zeros(size(trVV,1), 1);
+for vv = 1:size(trVV,1)
+    %Hv(vv) = vertexMeanCurvature(vv, VV, vertices);
+    Hv(vv) = vertexMeanCurvature(vv, trVV, trv);
 end
 
 %%
 
+trFaces = vv2fv(trVV);
+
 figure(2); clf
-patch('Faces', faces, 'Vertices', vertices, 'FaceVertexCData', Hv, ...
+%patch('Faces', faces, 'Vertices', vertices, 'FaceVertexCData', Hv, ...
+patch('Faces', trFaces, 'Vertices', trv, 'FaceVertexCData', Hv, ...
     'FaceColor', 'interp');
 colorbar
 axis image vis3d

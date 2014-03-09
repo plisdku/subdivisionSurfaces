@@ -3,8 +3,14 @@ function [VV2 vertices2] = truncateVV(VV, vertices, keep)
 %
 % Truncate a vertex-vertex mesh by removing vertices and all faces adjacent
 % to them.
+%
+% VV2 = truncateVV(VV, keep) omits the vertex calculation.
 
-numOriginalVertices = size(vertices,1);
+if nargin == 2
+    keep = vertices;
+end
+
+numOriginalVertices = size(VV,1);
 
 allVerts = 1:numOriginalVertices;
 
@@ -42,4 +48,6 @@ end
 
 %% And produce the vertices!
 
-vertices2 = vertices(keepThese,:);
+if nargin == 3
+    vertices2 = vertices(keepThese,:);
+end
