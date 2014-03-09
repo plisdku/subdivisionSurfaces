@@ -55,10 +55,11 @@ end
 
 faces = unique(redundantFaces(1:iFace-1,:), 'rows');
 
-if size(faces, 1) ~= estimatedNumFaces
-    warning('Expected %i faces from Euler characteristic but got %i faces.', ...
-        estimatedNumFaces, size(faces,1));
-end
+
+%if size(faces, 1) ~= estimatedNumFaces
+%    warning('Expected %i faces from Euler characteristic but got %i faces.', ...
+%        estimatedNumFaces, size(faces,1));
+%end
 
 
 

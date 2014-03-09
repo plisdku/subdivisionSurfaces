@@ -34,7 +34,7 @@ if numDims == 2
         [pStarts(:,2) pEnds(:,2)]', ...
         varargin{:});
     hold on
-    plot3(vertices(:,1), vertices(:,2), 'o');
+    %plot3(vertices(:,1), vertices(:,2), 'o');
     
 elseif numDims == 3
     
@@ -43,7 +43,7 @@ elseif numDims == 3
         [pStarts(:,3) pEnds(:,3)]', ...
         varargin{:});
     hold on
-    plot3(vertices(:,1), vertices(:,2), vertices(:,3), 'o');
+    %plot3(vertices(:,1), vertices(:,2), vertices(:,3), 'o');
     
 else
     error('Num dims = %i, weirdo.', numDims);

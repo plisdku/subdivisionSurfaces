@@ -1,4 +1,4 @@
-function [VV2 T vertices2 inheritance] = loopRefine(VV, vertices, ...
+function [VV2 T vertices2 perturbFlags] = loopRefine(VV, vertices, ...
     refineVertices)
 % [outVV T refinedVertices inheritance] = loopRefine(VV, vertices)
 %
@@ -50,9 +50,6 @@ vertexOnBoundary = @(v) any(arrayfun(@(w) full(isEdgeOnBoundary(v,w,VV)), ...
 vertices2 = vertices;
 VV2 = VV;
 
-inheritance = spalloc(numOriginalVertices + numEdges, 2, ...
-    2*numEdges);
-
 vNew = numOriginalVertices + 1; % index of next new vertex!
 
 % Iterate over edges:
@@ -79,8 +76,6 @@ for jj = 1:numNeighbors(v0)
         
         % and that concludes the addition of vertices; it's no longer a
         % triangular mesh though!
-        
-        inheritance(vNew, [1 2]) = [v0 v1];
         
         vNew = vNew + 1;
     end

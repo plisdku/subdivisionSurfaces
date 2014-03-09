@@ -1,66 +1,125 @@
 % driver!!!
 
-%[vertices faces] = readSTL('chunk10.stl');
+%N = 15;
+%[vertices faces] = flatRegularMesh(N);
+%vertices(:,3) = sin(0.07*vertices(:,1).^2);
+
 [vertices faces] = readSTL('chunk3.stl');
-VV = fv2vv(faces(randperm(size(faces,1)),:), vertices);
 
-figure(120); clf
-patch('Faces', faces, 'Vertices', vertices, 'FaceColor', 'r')
-view(3)
-axis image vis3d
+VV = fv2vv(faces, vertices);
+numVertices = size(VV,1);
 
-%% Loop subdivision!!!
+%vertices(:,3) = sin(2*(0.5*vertices(:,1).^2 + vertices(:,2)));
 
-[VV2 vertices2] = loopSubdivision(VV, vertices);
+
+figure(1); clf
+plotSomeVV(VV, vertices, find(vertices(:,3) < 0), 'b-');
+axis image
+view(10, 60)
+
 %%
-for ii = 1:6
-    %figure(ii); clf
-    %plotVV(VV2, vertices2, 'b-');
-    %axis image vis3d
-    
-    faces2 = vv2fv(VV2);
-    %figure(ii+10); clf
-    figure(1); clf
-    pause
-    fprintf('Patch time!\n');
-    flatPatch('Faces', faces2, 'Vertices', vertices2, 'FaceColor', 'r');
-    hold on
-    plotVV(VV, vertices, 'b--')
-    view(3); axis image vis3d
-    camlight right
-    fprintf('Pause time!\n');
-    
-    pause
-    [VV2 vertices2] = loopSubdivision(VV2, vertices2);
+[trVV trVertices] = truncateVV(VV, vertices, find(vertices(:,3) < 0));
+trFaces = vv2fv(trVV);
+
+figure(1); clf
+patch('Faces', trFaces, 'Vertices', trVertices, 'FaceColor', 'g', ...
+    'EdgeAlpha', 0.1);
+axis image vis3d
+view(10, 60)
+camlight left
+
+%%
+
+Hv = zeros(numVertices, 1);
+for vv = 1:numVertices
+    Hv(vv) = vertexMeanCurvature(vv, VV, vertices);
 end
 
 %%
-% As far as restricting certain regions to be divided or not divided:
-% well... any edge that gets split can connect no matter what.  The
-% splitting is a per-edge technique, that's all.  Mark edges to split that
-% way!
-%
-% One approach then: mark a vertex as "split adjacent" or something?  Or
-% split every edge next to a marked vertex?  I'm using a VV data structure
-% so I gotta make this make sense for me.
 
-%% Test mesh.
-
-[vertices faces] = flatRegularMesh(3);
-VV = fv2vv(faces, vertices);
-
-vertices(:,3) = sin(2*(vertices(:,1) + vertices(:,2)));
+figure(2); clf
+patch('Faces', faces, 'Vertices', vertices, 'FaceVertexCData', Hv, ...
+    'FaceColor', 'interp');
+colorbar
+axis image vis3d
+view(10, 60)
 
 %%
 
-crease = [1:4, 5:5:20, 25:-1:22, 21:-5:1];
+vertices2 = vertices;
+VV2 = VV;
 
-creaseB = [17];
+refineVertices = find(vertices2(:,1) > -20 & ...
+    vertices2(:,1) < 60 & ...
+    vertices2(:,2) > -20 & ...
+    vertices2(:,2) < 20 & ...
+    vertices2(:,3) > -40 & ...
+    vertices2(:,3) < 0);
+rv2 = refineVertices;
+
+for itr = 1:3
+    
+    [VV2, vertices2, ~, rv2] = loopSubdivisionAdaptive(VV2, vertices2, ...
+        rv2);
+    
+    [trVV trVertices] = truncateVV(VV2, vertices2,  ...
+        find(vertices2(:,3) < 0));
+    trFaces = vv2fv(trVV);
+
+    figure(1); clf
+    patch('Faces', trFaces, 'Vertices', trVertices, 'FaceColor', 'g', ...
+        'EdgeAlpha', 0.1);
+    axis image vis3d
+    view(10, 60)
+    camlight left
+    lighting phong
+    zoom(3)
+    hold on
+    plot3(vertices2(rv2,1), vertices2(rv2,2), vertices2(rv2,3), 'ro');
+    
+    pause
+
+end
+%%
+%refineVertices = find(Hv > 30);
+
+figure(3); clf
+plotVV(VV2, v2, 'b-');
 
 %%
-[VV2 vertices2 T creaseB2 crease2] = loopSubdivision(VV, vertices, creaseB, crease);
-[VV2 vertices2 T2 creaseB2 crease2] = loopSubdivision(VV2, vertices2, creaseB2, crease2);
-[VV2 vertices2 T3 creaseB2 crease2] = loopSubdivision(VV2, vertices2, creaseB2, crease2);
+
+
+%%
+
+Hv2 = zeros(size(VV2,1), 1);
+for vv = 1:size(VV2,1)
+    Hv2(vv) = vertexMeanCurvature(vv, VV2, v2);
+end
+
+%%
+
+f2 = vv2fv(VV2);
+
+figure(102); clf
+patch('Faces', f2, 'Vertices', v2, 'FaceVertexCData', Hv2, ...
+    'FaceColor', 'interp');
+colorbar
+axis image vis3d
+view(10, 60)
+
+%%
+
+crease = [1:4, 5:5:20, 25:-1:22, 21:-5:1]';
+
+rv0 = neighborhood([8 12 13], VV, 2);
+
+%%
+[VV2 vertices2 T rv crease2] = loopSubdivisionAdaptive(VV, vertices, rv0, crease);
+%%
+[VV2 vertices2 T2 rv crease2] = loopSubdivisionAdaptive(VV2, vertices2, rv, crease2);
+%%
+[VV2 vertices2 T3 rv crease2] = loopSubdivisionAdaptive(VV2, vertices2, rv, crease2);
+%%
 f2 = vv2fv(VV2);
 
 figure(1); clf
@@ -88,7 +147,7 @@ ax = axis;
 Ttot = T3*T2*T;
 verts = vertices;
 
-movObj = QTWriter('wiggle.mov');
+%movObj = QTWriter('wiggle.mov');
 
 for tt = 1:100
     
@@ -114,187 +173,9 @@ for tt = 1:100
     view(az, el)
     set(gcf, 'Color', 'k')
     camlight right; lighting phong
-    writeMovie(movObj, getframe);
+    %writeMovie(movObj, getframe);
     
     pause(0.01)
 end
-close(movObj);
+%close(movObj);
 
-%%
-
-[VV2, ~, vertices2] = loopRefine(VV2, vertices2);
-plotVV(VV2, vertices2);
-
-%%
-
-plotVV(VV, vertices, 'b-')
-hold on
-view(2); axis xy image
-
-%%
-[vertices faces] = flatRegularMesh(5);
-vertices(:,3) = sin(2*(vertices(:,1) + vertices(:,2)));
-VV = fv2vv(faces, vertices);
-
-refineVertices = [1 2 6];
-
-vertices2 = vertices;
-VV2 = VV;
-
-% Refinement means:
-% - split all edges in the 1-neighborhood of the refinement vertices
-% - the new refinement vertices are in the 1-neighborhood of AT LEAST TWO
-% of the old refinement vertices.  Use the adjacency matrix to figure this
-% out, since it can count the connections between vertices.
-
-%%
-
-A = vv2adjacency(VV2);
-    
-Ttot = [];
-numRefinements = 10;
-for refinements = 1:numRefinements
-    
-    % Refine all edges between vertices in the 1-neighborhood of the
-    % refinement set.
-    
-    [VV2, T] = loopRefine(VV2, vertices2, refineVertices);
-    vertices2 = T*vertices2;
-    refineVertices = union(neighborhood(refineVertices, VV2, 1, 2), ...
-        refineVertices);
-    
-    % The new vertices to refine are the original vertices to refine and
-    % all the new (split) vertices on the edges between them.
-    
-    
-    figure(1); clf
-    plotVV(VV, vertices, 'b-'); %, 'Color', [0.8 0.8 1]);
-    hold on
-    plotVV(VV2, vertices2, 'b-');
-    plotSomeVV(VV2, vertices2, refineVertices, 'r-');
-    axis xy image vis3d
-    view(2)
-    pause
-end
-%%
-
-[VV1 v1] = truncateVV(VV, vertices, ring1);
-[VV2 v2] = truncateVV(VV, vertices, ring2);
-
-figure(1); clf
-plotVV(VV, vertices, 'b-');
-view(2); axis xy image
-
-hold on
-plotVV(VV2, v2, 'g-', 'LineWidth', 2)
-plotVV(VV1, v1, 'r-', 'LineWidth', 3)
-
-[VVr, T, vr] = loopRefine(VV, vertices, ring1 | refineVertexFlags);
-plotVV(VVr, vr, 'k-');
-
-%% Nicer plot!
-
-fvr = vv2fv(VVr);
-figure(10); clf
-patch('Faces', fvr, 'Vertices', vr, 'FaceColor', 'g', 'EdgeAlpha', 0.1)
-
-%% Test truncation...
-
-[vertices faces] = flatRegularMesh(3);
-VV = fv2vv(faces, vertices);
-keep = [6:9, 2];
-
-[VV2 vertices2] = truncateVV(VV, vertices, keep);
-
-%% Make a distorted mesh and optimize it
-[vertices f] = flatRegularMesh(10);
-VV = fv2vv(f,vertices);
-vertices(:,3) = 4*(sin(2*(vertices(:,1) + vertices(:,2))));
-vertices = vertices + 0.25*(rand(size(vertices)) - 0.5);
-vertices = vertices.^2;
-
-[VV vertices] = loopSubdivision(VV, vertices);
-
-figure(1); clf
-plotVV(VV, vertices, 'b-');
-view(2);
-axis normal
-
-VV2 = optimizeVVFaces(VV, vertices);
-
-figure(2); clf
-plotVV(VV2, vertices, 'b-');
-view(2);
-axis normal
-
-%% Optimize a more difficult mesh
-
-[vertices faces] = readSTL('chunk3.stl');
-VV = fv2vv(faces, vertices);
-
-%%
-
-[VV vertices] = loopSubdivision(VV, vertices);
-faces = vv2fv(VV);
-
-%%
-VV2 = optimizeVVFaces(VV, vertices);
-
-%%
-
-H1 = totalMeanAbsoluteCurvature(VV, vertices);
-H2 = totalMeanAbsoluteCurvature(VV2, vertices);
-fprintf('Total mean absolute curvature went from %f to %f\n', H1, H2);
-
-%%
-f2 = vv2fv(VV2);
-
-figure(1); clf
-flatPatch('Faces', faces, 'Vertices', vertices, 'FaceColor', 'r');
-axis image vis3d;
-view(3)
-camlight right
-
-figure(2); clf
-flatPatch('Faces', f2, 'Vertices', vertices, 'FaceColor', 'r');
-axis image vis3d;
-view(3)
-camlight right
-
-%% Plot the per-vertex curvature
-
-numVertices = size(VV,1);
-Hv = zeros(numVertices,1);
-Kv = Hv;
-
-for vv = 1:numVertices
-    Hv(vv) = vertexMeanCurvature(vv,VV,vertices);
-    Kv(vv) = vertexGaussianCurvature(vv,VV,vertices);
-end
-
-%%
-
-vColor = linspace(0, 1, numVertices)' * [1 1 1];
-
-figure(3); clf
-patch('Faces', faces, 'Vertices', vertices, 'FaceVertexCData', Hv, ...
-    'FaceColor', 'interp', 'EdgeAlpha', 0);
-axis image vis3d;
-view(3);
-colormap hot
-colorbar
-%camlight right
-
-
-%% spokes
-
-[vertices faces] = wagonWheel(4);
-VV = fv2vv(faces, vertices);
-
-VV2 = optimizeVVFaces(VV, vertices);
-
-
-
-
-
-%%

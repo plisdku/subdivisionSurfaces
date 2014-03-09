@@ -11,12 +11,8 @@ numVertices = size(VV,1);
 valence = numVVNeighbors(VV);
 numEdges = sum(valence)/2;
 
-vertexOnBoundary = @(v) any(arrayfun(@(w) full(isEdgeOnBoundary(v,w,VV)), ...
-    full(VV(v, 1:valence(v)))));
-
-%%
-
-
+makePlots = false;
+checkForErrors = false;
 
 %% Prioritize edges for swapping.  (Build priority queue.)
 % Put ALL non-boundary edges into a priority queue.
@@ -92,33 +88,37 @@ while ~done
         %plotSomeVV(VV2, vertices, [vv ww xx yy], 'r-', 'LineWidth', 2);
         %plotSomeVV(VV2, vertices, [vv ww], 'g--', 'LineWidth', 3);
         
-        assert(~ismember(xx, VV(yy, 1:Ny)));
-        assert(~ismember(yy, VV(xx, 1:Nx)));
-        assert(Nv > 3);
-        assert(Nw > 3);
-        localCheck(VV2, [vv ww xx yy]);
+        if checkForErrors
+            assert(~ismember(xx, VV(yy, 1:Ny)));
+            assert(~ismember(yy, VV(xx, 1:Nx)));
+            assert(Nv > 3);
+            assert(Nw > 3);
+            localCheck(VV2, [vv ww xx yy]);
+        end
         
-        
-        fprintf('Processing %f, presently %f, going to %f\n', score, ...
-            norm(diff(vertices([vv ww],:))),  ...
-            norm(diff(vertices([xx yy],:))));
+        %fprintf('Processing %f, presently %f, going to %f\n', score, ...
+        %    norm(diff(vertices([vv ww],:))),  ...
+        %    norm(diff(vertices([xx yy],:))));
         
         % Plot first:
-        f2 = vv2fv(VV2);
         
-        figure(1); clf
-        patch('Faces', f2, 'Vertices', vertices, 'FaceColor', 'g', ...
-            'EdgeAlpha', 0.1);
-        camlight right
-        lighting phong
-        %view(3);
-        view(90,-40);
-        axis image
-        [truncVV truncVertices] = truncateVV(VV2, vertices, [xx yy vv ww]);
-        hold on
-        plotVV(truncVV, truncVertices, 'r-');
-        %plotVV(trVV, trv, 'y--', 'LineWidth', 4)
-        pause(0.4);
+        if makePlots
+            f2 = vv2fv(VV2);
+
+            figure(1); clf
+            patch('Faces', f2, 'Vertices', vertices, 'FaceColor', 'g', ...
+                'EdgeAlpha', 0.1);
+            camlight right
+            lighting phong
+            %view(3);
+            view(90,-40);
+            axis image
+            [truncVV truncVertices] = truncateVV(VV2, vertices, [xx yy vv ww]);
+            hold on
+            plotVV(truncVV, truncVertices, 'r-');
+            %plotVV(trVV, trv, 'y--', 'LineWidth', 4)
+            pause(0.4);
+        end
         
         % vv removes ww, ww removes vv
         
@@ -137,19 +137,24 @@ while ~done
         w_in_y = find(VV2(yy,1:Ny) == ww, 1);
         VV2(yy, 1:Ny+1) = [VV2(yy, 1:w_in_y) xx VV2(yy, w_in_y+1:Ny)];
         
-        localCheck(VV2, [vv ww xx yy]);
-        
-        % Rescore it: score -> 1/score
         
         % Check that new edge has vertices of valence > 3
-        assert(nnz(VV2(xx,:)) > 3);
-        assert(nnz(VV2(yy,:)) > 3);
+        if checkForErrors
+            localCheck(VV2, [vv ww xx yy]);
+        
+            assert(nnz(VV2(xx,:)) > 3);
+            assert(nnz(VV2(yy,:)) > 3);
+        end
+        
+        % Rescore it: score -> 1/score
         
         heap.pop();
         heap.push(1/score, sort([xx yy]));
         
-        assert(ww == nextInTriangle(xx,yy,VV2));
-        assert(vv == nextInTriangle(yy,xx,VV2));
+        if checkForErrors
+            assert(ww == nextInTriangle(xx,yy,VV2));
+            assert(vv == nextInTriangle(yy,xx,VV2));
+        end
         
         % Function to score an edge:
         keyFunction = @(edge) scoreEdge(VV2, vertices, edge(1), edge(2));
@@ -175,8 +180,6 @@ while ~done
             makeNeighborhoodEdges(ww,yy)];
         N2Edges = unique(sort(N2EdgesUnsorted,2), 'rows');
         
-        %makeEdgePredicate = @(a,b) @(edge) edge == [a b];
-        
         for ee = 1:size(N2Edges,1)
             %fprintf('Rey-keying [%i %i] to %f\n', ...
             %    N2Edges(ee,1), N2Edges(ee,2), keyFunction(N2Edges(ee,:)));
@@ -185,43 +188,6 @@ while ~done
                 scoreEdge(N2Edges(ee,1), N2Edges(ee,2), VV2, vertices));
         end
         
-        %{
-        % Brute force checking of valence criterion
-        for ii = 1:heap.heapSize
-            if nnz(VV2(heap.values(ii,1),:)) <= 3 || ...
-                nnz(VV2(heap.values(ii,2),:)) <= 3
-                
-                assert(heap.keys(ii) == -Inf);
-                
-            end
-            
-        end
-        %}
-        
-        %{
-        reKeys = heap.reKey(makeEdgePredicate(xx,vv), keyFunction) + ...
-            heap.reKey(makeEdgePredicate(xx,ww), keyFunction) + ...
-            heap.reKey(makeEdgePredicate(yy,vv), keyFunction) + ...
-            heap.reKey(makeEdgePredicate(yy,ww), keyFunction);
-        
-        fprintf('Re-keyed %i 1-neighborhood edges\n', reKeys);
-        %}
-        
-        %fprintf('Swapped %f for %f\n', score, 1/score);
-        %{
-        figure(1); clf
-        patch('Faces', f2, 'Vertices', vertices, 'FaceColor', 'g', ...
-            'EdgeAlpha', 0.1, 'FaceAlpha', 0.8);
-        camlight right
-        lighting phong
-        %view(3);
-        view(70,-40);
-        axis image
-        [truncVV truncVertices] = truncateVV(VV2, vertices, [xx yy vv ww]);
-        hold on
-        plotVV(truncVV, truncVertices, 'r-', 'LineWidth', 2);
-        pause(0.4)
-        %}
     end
     
 end
