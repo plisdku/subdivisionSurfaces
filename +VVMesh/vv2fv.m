@@ -20,6 +20,14 @@ import VVMesh.*
 
 numVertices = size(VV,1);
 
+% Special case: a triangle.  It can't be oriented.
+% (Any triangles disconnected from the rest of the mesh will also have this
+% problem and will end up ignored.  I'm not testing for such a problem.)
+if numVertices == 3
+    faces = [1 2 3];
+    warning('Triangle cannot be oriented.  Picking order [1 2 3].');
+end
+
 if nargin == 1
     numNeighbors = zeros(numVertices, 1);
     
@@ -40,18 +48,36 @@ redundantFaces = zeros(3*estimatedNumFaces, 3);
 
 iFace = 1;
 
-for ii = 1:numVertices
+wrap = @(n,N) 1 + mod(n-1,N);
+
+for vv = 1:numVertices
     % putMeFirst([1 7 3 2], 3) returns [3 2 1 7].
     putMeFirst = @(indexRow, index) circshift(indexRow, ...
         [0, 1-find(indexRow == index)]);
     
-    for jj = 1:numNeighbors(ii)-1 % for each adjacent face
-        face = [ii, VV(ii,jj), VV(ii,jj+1)];
+    if numNeighbors(vv) == 2
+        % Because a vertex with two neighbors can't be oriented it's liable
+        % to insert a wrongly-oriented face into the output list.  Just let
+        % the other vertices that share its (only) triangle deal with the
+        % orientation!  Of course if the mesh is merely one triangle then
+        % this will fail.
+        continue;
+    end
+    
+    for jj = 1:numNeighbors(vv) % for each adjacent face
+        ww = VV(vv,jj);
+        xx = VV(vv, wrap(jj+1, numNeighbors(vv)));
         
-        % put the lowest index first.  This will help remove redundant
-        % faces later.
-        redundantFaces(iFace,:) = putMeFirst(face, min(face));
-        iFace = iFace + 1;
+        if ismember(ww, VV(xx,:)) % if this is a complete triangle
+            face = full([vv ww xx]);
+
+            %fprintf('Face is %i %i %i\n', face(1), face(2), face(3));
+
+            % put the lowest index first.  This will help remove redundant
+            % faces later.
+            redundantFaces(iFace,:) = putMeFirst(face, min(face));
+            iFace = iFace + 1;
+        end
     end
 end
 

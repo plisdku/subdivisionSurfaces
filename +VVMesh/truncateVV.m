@@ -5,6 +5,8 @@ function [VV2 vertices2] = truncateVV(VV, vertices, keep)
 % to them.
 %
 % VV2 = truncateVV(VV, keep) omits the vertex calculation.
+%
+% keep may be either a logical array or an array of indices.
 
 import VVMesh.*
 
@@ -15,7 +17,6 @@ end
 numOriginalVertices = size(VV,1);
 
 allVerts = 1:numOriginalVertices;
-
 keepThese = sort(allVerts(keep));
 
 %deleteThese = allVerts;

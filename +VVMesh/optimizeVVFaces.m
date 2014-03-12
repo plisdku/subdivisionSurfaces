@@ -1,4 +1,4 @@
-function VV2 = optimizeVVFaces(VV, vertices)
+function VV2 = optimizeVVFaces(VV, vertices, fixedEdges)
 % VV2 = optimizeVVFaces(VV, vertices)
 %
 % Iteratively flip diagonals of split quads to make triangles more uniform.
@@ -15,6 +15,13 @@ numEdges = sum(valence)/2;
 
 makePlots = false;
 checkForErrors = false;
+
+%% Create matrix of fixed edges
+
+numFixedEdges = size(fixedEdges,1);
+fixed = sparse(fixedEdges(:,1), fixedEdges(:,2), true(numFixedEdges,1),...
+    numVertices, numVertices);
+fixed = fixed | transpose(fixed);
 
 %% Prioritize edges for swapping.  (Build priority queue.)
 % Put ALL non-boundary edges into a priority queue.
@@ -36,7 +43,7 @@ for vv = 1:numVertices
     
     for ii = 1:valence(vv)
     ww = VV(vv,ii);
-    if vv < ww && ~isUnorientedEdgeOnBoundary(vv,ww,VV)
+    if vv < ww && ~isUnorientedEdgeOnBoundary(vv,ww,VV) && ~fixed(vv,ww)
         
         score = scoreEdge(vv, ww, VV, vertices);
         

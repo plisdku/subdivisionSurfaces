@@ -22,6 +22,9 @@ end
 
 numFaces = size(faces, 1);
 
+assert(max(faces(:)) <= numVertices);
+assert(min(faces(:)) >= 1);
+
 % Euler characteristic: V - E + F = 2 for polyhedra.
 % Use to guess number of edges.
 % This tells us how to guess the number of VV neighbors.
@@ -117,19 +120,6 @@ for iVert = 1:numVertices
         
         vNeighbors(nn) = edges(2,currentEdge);
     end
-    
-    
-    
-    % Here's the version for surfaces without boundaries.
-%     vNeighbors(1) = edges(1,1);
-%     
-%     for nn = 2:numNeighbors
-%         nextEdge = find(edges(1,:) == vNeighbors(nn-1));
-%         
-%         assert(numel(nextEdge) == 1);
-%         
-%         vNeighbors(nn) = edges(2,nextEdge);
-%     end
     
     VV(iVert,1:numNeighborVerts) = vNeighbors;
 end

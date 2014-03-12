@@ -1,4 +1,5 @@
 function checkSymmetry(VV)
+% checkSymmetry(VV)
 
 import VVMesh.*
 

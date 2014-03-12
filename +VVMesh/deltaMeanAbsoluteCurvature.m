@@ -46,6 +46,7 @@ function deltaMAC = calcDeltaH(v0, v1, v2, v2b)
 % Calculate the change of MAC along v0-v1 when its v2 is replaced with v2b.
 % Will need the right-hand neighbor vertex of v0-v1!
     
+    import VVMesh.*
     if isUnorientedEdgeOnBoundary(v0, v1, VV)
         deltaMAC = 0;
         return
