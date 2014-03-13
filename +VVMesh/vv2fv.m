@@ -52,8 +52,8 @@ wrap = @(n,N) 1 + mod(n-1,N);
 
 for vv = 1:numVertices
     % putMeFirst([1 7 3 2], 3) returns [3 2 1 7].
-    putMeFirst = @(indexRow, index) circshift(indexRow, ...
-        [0, 1-find(indexRow == index)]);
+    %putMeFirst = @(indexRow, index) circshift(indexRow, ...
+    %    [0, 1-find(indexRow == index)]);
     
     if numNeighbors(vv) == 2
         % Because a vertex with two neighbors can't be oriented it's liable
@@ -68,19 +68,42 @@ for vv = 1:numVertices
         ww = VV(vv,jj);
         xx = VV(vv, wrap(jj+1, numNeighbors(vv)));
         
-        if ismember(ww, VV(xx,:)) % if this is a complete triangle
+        %if ismember(ww, VV(xx,:)) % if this is a complete triangle
+        if find(VV(xx,:) == ww, 1) % if this is a complete triangle
             face = full([vv ww xx]);
-
             %fprintf('Face is %i %i %i\n', face(1), face(2), face(3));
 
+            if iFace > size(redundantFaces,1)
+                warning('Doubling face buffer.');
+                redundantFaces(2*iFace,3) = 0; % double its size...
+            end
+            
             % put the lowest index first.  This will help remove redundant
             % faces later.
-            redundantFaces(iFace,:) = putMeFirst(face, min(face));
+            
+            if face(1) <= face(2)
+                if face(1) <= face(3)
+                    redundantFaces(iFace,:) = face;
+                else
+                    redundantFaces(iFace,:) = face([3 1 2]);
+                end
+            else
+                if face(2) <= face(3)
+                    redundantFaces(iFace,:) = face([2 3 1]);
+                else
+                    redundantFaces(iFace,:) = face([3 1 2]);
+                end
+            end
+            
+            %[~,minVertexIndex] = min(face);
+            %redundantFaces(iFace,:) = circshift(face, [0, 1-minVertexIndex]);
+            %assert(isequal(redundantFaces(iFace,:), putMeFirst(face,min(face))));
+            %redundantFaces(iFace,:) = putMeFirst(face, min(face));
             iFace = iFace + 1;
+            
         end
     end
 end
-
 faces = unique(redundantFaces(1:iFace-1,:), 'rows');
 
 
