@@ -1,5 +1,5 @@
 function [VV2 T vertices2 perturbFlags] = loopRefine(VV, vertices, ...
-    refineVertices)
+    refineVertices, varargin)
 % [outVV T refinedVertices inheritance] = loopRefine(VV, vertices)
 %
 % Mesh refinement step in Loop subdivision.  Does not perturb
@@ -254,4 +254,5 @@ if ~all(abs(Tsums - 1.0) < 1e-6)
     error('T seems wrong.\n');
 end
 
+end
 

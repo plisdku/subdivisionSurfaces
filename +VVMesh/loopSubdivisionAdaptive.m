@@ -17,7 +17,7 @@ import VVMesh.*
 
 numOriginalVertices = size(vertices,1);
 
-[VV2, T, ~, perturbFlags] = loopRefine(VV, vertices, refineVertices);
+[VV2, T, vertices2, perturbFlags] = loopRefine(VV, vertices, refineVertices);
 % ok that was the easy part.
 
 refineVertices = union(refineVertices, ...
@@ -70,7 +70,7 @@ for cc = 1:numCreases
     varargout{cc} = crease2;
 end
 
-vertices2 = T * vertices;
+%vertices2 = T * vertices;
 
 
 
@@ -179,6 +179,5 @@ function [refined, T] = refinedCrease(crease, perturbFlags, VV, VV2)
 
     assert(max(sum(T,2)) <= 1.00001);
 end
-
 
 end
