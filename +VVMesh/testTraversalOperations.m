@@ -27,8 +27,8 @@ axis xy image
 % non-boundaries).  If u-v is an edge of a triangle (there's a triangle to
 % the left of u-v), then next(u,v) is the same as prev(u,v).
 
-next = @(u, v) nextInTriangle(u, v, VV);
-prev = @(u, v) prevInTriangle(u, v, VV);
+next = @(u, v) VVMesh.nextInTriangle(u, v, VV);
+prev = @(u, v) VVMesh.prevInTriangle(u, v, VV);
 
 testEqual(next(1,2), 4);
 testEqual(next(2,3), 5);
@@ -68,7 +68,7 @@ fprintf('Prev and next on %i boundary edges, PASSED\n', numBoundaryEdges);
 % isEdgeOnBoundary means "is this edge not bounded by a triangle on the
 % left."
 
-isEdge = @(u, v) isEdgeOnBoundary(u,v,VV);
+isEdge = @(u, v) VVMesh.isEdgeOnBoundary(u,v,VV);
 
 for ee = 1:numBoundaryEdges
     v0 = fullSide(ee);

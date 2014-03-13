@@ -180,16 +180,75 @@ classdef Heap < handle
             end
         end
         
-        function idx = locate(obj, value)
+        % Search the entire value array for a row that == valueAsRow
+        function idx = findRow(obj, valueAsRow)
             
-            for idx = 1:obj.heapSize
-                if isequal(obj.value(idx), value)
-                    return
+            idx = find(obj.values(:,1) == valueAsRow(1));
+            
+            if numel(idx) > 1
+                dims = numel(valueAsRow);
+                for dd = 1:dims
+                    subIdx = find(obj.values(idx,dd) == valueAsRow(dd));
+                    idx = idx(subIdx);
+                    
+                    if numel(idx) == 1
+                        return;
+                    end
                 end
             end
             
-            idx = 0;
+            if numel(idx) > 1
+                warning('Found multiple.');
+                idx = idx(1);
+            end
+            
         end
+        
+        % Search the entire value array for a column that == valueAsCol
+        function idx = findCol(obj, valueAsCol)
+            
+            idx = find(obj.values(1,:) == valueAsCol(1));
+            
+            if numel(idx) > 1
+                dims = numel(valueAsCol);
+                for dd = 1:dims
+                    subIdx = find(obj.values(dd,idx) == valueAsCol(dd));
+                    idx = idx(subIdx);
+                    
+                    if numel(idx) == 1
+                        return;
+                    end
+                end
+            end
+            
+            if numel(idx) > 1
+                warning('Found multiple.');
+                idx = idx(1);
+            end
+            
+        end
+
+        function idx = locate(obj, value)
+            if obj.isRow
+                assert(iscolumn(value));
+                idx = obj.findCol(value);
+            else
+                assert(isrow(value));
+                idx = obj.findRow(value);
+            end
+        end
+        
+        
+%         function idx = locate(obj, value)
+%             
+%             for idx = 1:obj.heapSize
+%                 if isequal(obj.value(idx), value)
+%                     return
+%                 end
+%             end
+%             
+%             idx = 0;
+%         end
         
         % For the heap element with the given value,
         % replace its key and re-heapify.

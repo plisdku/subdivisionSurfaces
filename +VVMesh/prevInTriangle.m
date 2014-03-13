@@ -9,7 +9,8 @@ function v0 = prevInTriangle(v1, v2, VV)
 
 import VVMesh.*
 
-circNext = @(n, nMax) 1 + mod(n, nMax); % (n+1) - 1 == n.
-findIndex = @(iFindMe, indices) find(indices == iFindMe, 1);
+%circNext = @(n, nMax) 1 + mod(n, nMax); % (n+1) - 1 == n.
+%findIndex = @(iFindMe, indices) find(indices == iFindMe, 1);
+%v0 = full(VV(v1, circNext(findIndex(v2, VV(v1,:)), nnz(VV(v1,:)))));
 
-v0 = full(VV(v1, circNext(findIndex(v2, VV(v1,:)), nnz(VV(v1,:)))));
+v0 = full(VV(v1, 1 + mod(find(VV(v1,:)==v2,1), nnz(VV(v1,:)))));
