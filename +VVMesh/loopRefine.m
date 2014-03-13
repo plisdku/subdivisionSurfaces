@@ -133,6 +133,14 @@ printVert = @(ii) fprintf('Vertex %i is at %i %i %i\n', full(ii), ...
 
 isOld = @(vIndex) vIndex <= numOriginalVertices;
 
+% If I were to use sparse() to speed up some of this stuff, which would be
+% a big improvement, I could start like this... it seems like a pain...
+%numNewVertices = size(vertices2,1) - numOriginalVertices;
+%newRows = zeros(numNewVertices*4,1);
+%newCols = zeros(numNewVertices*4,1);
+%newVals = zeros(numNewVertices*4,1);
+%iNew = 1;
+
 % For each NEW vertex:
 for vNew = numOriginalVertices+1:size(vertices2,1)
     
@@ -227,11 +235,13 @@ for vNew = numOriginalVertices+1:size(vertices2,1)
     assert(numel(unique(neighbors10)) == numel(neighbors10));
     
     % All neighbors for the vertex!!
+    
+    % According to the profiler, this step is verrrry slow.
     VV2(vNew, 1:(numel(neighbors01) + numel(neighbors10))) = ...
         [neighbors01 neighbors10];
     
     if numel(unique([neighbors01 neighbors10])) <= 2
-        error('Fuck.');
+        error('poop.');
     end
     
     % Now the T-matrix:
@@ -242,6 +252,10 @@ for vNew = numOriginalVertices+1:size(vertices2,1)
         T(vNew, [nextInTriangle(v1, v0, VV) nextInTriangle(v0, v1, VV)]) = 0.125;
     end
 end
+
+%VV2_additional = sparse(newRows, newCols, newVals, ...
+%    size(VV2,1), size(VV2,2));
+%VV2 = VV2 + VV2_additional;
 
 %% Tests!
 
