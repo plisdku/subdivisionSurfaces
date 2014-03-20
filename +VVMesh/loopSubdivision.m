@@ -1,5 +1,5 @@
 function [VV2 vertices2 T varargout] = loopSubdivision(VV, vertices, varargin)
-% [VV2 verticesT ] = loopSubdivision(VV, vertices)
+% [VV2 vertices T] = loopSubdivision(VV, vertices)
 %
 % Perform loop subdivision on the vertex-vertex mesh (VV, vertices)
 %

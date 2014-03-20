@@ -1,4 +1,4 @@
-function [VV2 vertices2] = truncateVV(VV, vertices, keep)
+function [VV2 vertices2 keepThese] = truncateVV(VV, vertices, keep)
 % [VV2 vertices2] = truncateVV(VV, vertices, keep)
 %
 % Truncate a vertex-vertex mesh by removing vertices and all faces adjacent
