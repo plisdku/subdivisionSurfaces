@@ -1,17 +1,18 @@
 function [VV2 vertices2 T refineVertices varargout] = loopSubdivisionAdaptive(...
     VV, vertices, refineVertices, varargin)
-% [VV2 verticesT ] = loopSubdivisionAdaptive(VV, vertices, refineVertices)
+% [VV2 vertices T ] = loopSubdivisionAdaptive(VV, vertices, refineVertices)
 %
 % Perform loop subdivision on the vertex-vertex mesh (VV, vertices)
 %
 % T is the transformation matrix such that vertices2 = T*vertices.
 %
-% [VV2 vertices2 T refineVertices2 crease2] = 
+% [VV2 vertices T refineVertices2 crease2] = 
 %   loopSubdivisionAdaptive(VV, vertices, refineVertices, crease)
 %
 % where crease is a chain of adjacent vertices will treat the crease as a
 % 1D spline in subdivision.  crease2 is the list of refined vertex
-% indices making up the crease after subdivision.
+% indices making up the crease after subdivision.  refineVertices2 is the
+% new list of vertices to refine if you want to continue.
 
 import VVMesh.*
 

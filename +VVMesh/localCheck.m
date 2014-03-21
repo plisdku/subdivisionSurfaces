@@ -6,7 +6,9 @@ function localCheck(VV, vertices)
 
 import VVMesh.*
 
-for vv = vertices
+each = @(A) reshape(A, 1, []);
+
+for vv = each(vertices)
     
     valence = nnz(VV(vv,:));
     
@@ -14,7 +16,7 @@ for vv = vertices
     assert(valence > 2);
     
     % Check symmetry
-    for ww = VV(vv,1:valence)
+    for ww = each(VV(vv,1:valence))
         valence_w = nnz(VV(ww,:));
         assert(ismember(vv, VV(ww,1:valence_w)));
     end

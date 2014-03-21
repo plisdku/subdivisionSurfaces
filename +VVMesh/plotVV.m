@@ -1,4 +1,5 @@
 function plotVV(VV, vertices, varargin)
+% plotVV(VV, vertices, varargin) 
 
 import VVMesh.*
 

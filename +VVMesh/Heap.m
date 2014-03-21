@@ -4,8 +4,12 @@ classdef Heap < handle
         keys = [];
         heapSize = 0;
         values = [];
-        
         isRow = true;
+        
+        % Things that change frequently...
+        
+        numSwaps = 0;
+        swapBuffer = [];
     end
     
     methods 
@@ -17,6 +21,10 @@ classdef Heap < handle
             else
                 [obj.keys ii] = sort(varargin{1}, 'descend');
                 obj.heapSize = numel(obj.keys);
+                
+                obj.clearSwapBuffer();
+                obj.numSwaps = obj.heapSize;
+                obj.swapBuffer = [ (1:obj.numSwaps)' reshape(ii, [], 1) ];
                 
                 if isrow(obj.keys)
                     obj.isRow = true;
@@ -37,6 +45,15 @@ classdef Heap < handle
             
         end
         
+        function clearSwapBuffer(obj)
+            obj.numSwaps = 0;
+            
+            if numel(obj.swapBuffer) < numel(obj.keys)
+                obj.swapBuffer(numel(obj.keys),2) = 0;
+            end
+        end
+        
+        % T is the heap reordering matrix.
         function a = swap(obj, a, b)
             
             obj.keys([a b]) = obj.keys([b a]);
@@ -50,6 +67,9 @@ classdef Heap < handle
             end
             
             a = b;
+            
+            obj.numSwaps = obj.numSwaps + 1;
+            obj.swapBuffer(obj.numSwaps,:) = [a b];
             
         end
         
@@ -65,9 +85,23 @@ classdef Heap < handle
         
         function push(obj, key, value)
             
-            parent = @(n) floor(n/2);
             obj.heapSize = obj.heapSize + 1;
             iLast = obj.heapSize;
+            
+            % Efficient heap re-sizing.
+            if obj.heapSize > numel(obj.keys) && obj.heapSize > 1
+                
+                newAllocSize = 2*numel(obj.keys);
+                obj.keys(newAllocSize) = 0; % double size!
+                
+                if nargin == 3
+                    if obj.isRow
+                        obj.values(end,newAllocSize) = 0;
+                    else
+                        obj.values(newAllocSize,end) = 0;
+                    end
+                end     
+            end
             
             obj.keys(iLast) = key;
             
@@ -87,6 +121,7 @@ classdef Heap < handle
                 end
             end
             
+            obj.clearSwapBuffer();
             obj.bubbleUp(iLast);
             
         end
@@ -120,6 +155,7 @@ classdef Heap < handle
                 key = obj.top();
             end
             
+            obj.clearSwapBuffer();
             obj.swap(1, obj.heapSize);
             obj.heapSize = obj.heapSize - 1;
             
@@ -149,8 +185,11 @@ classdef Heap < handle
             
             done = false;
             while ~done
-                lc = leftChild(iCurrent);
-                rc = rightChild(iCurrent);
+                %lc = leftChild(iCurrent);
+                %rc = rightChild(iCurrent);
+                
+                lc = 2*iCurrent;
+                rc = lc + 1;
                 
                 currKey = obj.keys(iCurrent);
                 leftKey = -Inf;
@@ -188,8 +227,7 @@ classdef Heap < handle
             if numel(idx) > 1
                 dims = numel(valueAsRow);
                 for dd = 1:dims
-                    subIdx = find(obj.values(idx,dd) == valueAsRow(dd));
-                    idx = idx(subIdx);
+                    idx = idx(obj.values(idx,dd) == valueAsRow(dd));
                     
                     if numel(idx) == 1
                         return;
@@ -212,8 +250,7 @@ classdef Heap < handle
             if numel(idx) > 1
                 dims = numel(valueAsCol);
                 for dd = 1:dims
-                    subIdx = find(obj.values(dd,idx) == valueAsCol(dd));
-                    idx = idx(subIdx);
+                    idx = idx(obj.values(dd,idx) == valueAsCol(dd));
                     
                     if numel(idx) == 1
                         return;
@@ -239,22 +276,18 @@ classdef Heap < handle
         end
         
         
-%         function idx = locate(obj, value)
-%             
-%             for idx = 1:obj.heapSize
-%                 if isequal(obj.value(idx), value)
-%                     return
-%                 end
-%             end
-%             
-%             idx = 0;
-%         end
-        
         % For the heap element with the given value,
         % replace its key and re-heapify.
         function reKey(obj, value, key)
             
             idx = obj.locate(value);
+            obj.reKeyIndex(idx, key);
+            
+        end
+        
+        % Given the particular index, re-key it.
+        function reKeyIndex(obj, idx, key)
+            obj.clearSwapBuffer();
             
             if idx ~= 0
                 obj.keys(idx) = key;
@@ -267,32 +300,7 @@ classdef Heap < handle
                     obj.bubbleDown(idx);
                 end
             end
-            
         end
-%         function found = reKey(obj, valuePredicate, keyFunction)
-%             
-%             found = false;
-%             for ii = 1:obj.heapSize
-%                 val = obj.values(ii);
-%                 if valuePredicate(val)
-%                     found = true;
-%                     break;
-%                 end
-%             end
-%             
-%             if found
-%                 obj.keys(ii) = keyFunction(val);
-%                 
-%                 parent = @(n) floor(n/2);
-%                 
-%                 if ii > 1 && obj.keys(ii) > obj.keys(parent(ii))
-%                     obj.bubbleUp(ii);
-%                 else
-%                     obj.bubbleDown(ii);
-%                 end
-%             end
-%             
-%         end
             
         
     end % methods
