@@ -54,7 +54,7 @@ classdef Heap < handle
         end
         
         % T is the heap reordering matrix.
-        function a = swap(obj, a, b)
+        function aOut = swap(obj, a, b)
             
             obj.keys([a b]) = obj.keys([b a]);
             
@@ -66,10 +66,10 @@ classdef Heap < handle
                 end
             end
             
-            a = b;
-            
             obj.numSwaps = obj.numSwaps + 1;
             obj.swapBuffer(obj.numSwaps,:) = [a b];
+            
+            aOut = b;
             
         end
         
