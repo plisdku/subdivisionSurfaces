@@ -1,24 +1,31 @@
 function [VV2 vertices2 T refineVertices varargout] = loopSubdivisionAdaptive(...
     VV, vertices, refineVertices, varargin)
-% [VV2 vertices T ] = loopSubdivisionAdaptive(VV, vertices, refineVertices)
+% [VV2 vertices2 T ] = loopSubdivisionAdaptive(VV, vertices, refineVertices)
 %
-% Perform loop subdivision on the vertex-vertex mesh (VV, vertices)
+% Perform loop subdivision on the vertex-vertex mesh (VV, vertices).
+% refineVertices is a list of vertex indices bounding a set of triangles
+% that must be refined.  Refinement will extend slightly outside this
+% region to ensure that the inner refined region is identical to that from
+% global refinement.
 %
 % T is the transformation matrix such that vertices2 = T*vertices.
 %
-% [VV2 vertices T refineVertices2 crease2] = 
+% [VV2 vertices2 T refineVertices2 crease2] = 
 %   loopSubdivisionAdaptive(VV, vertices, refineVertices, crease)
 %
 % where crease is a chain of adjacent vertices will treat the crease as a
 % 1D spline in subdivision.  crease2 is the list of refined vertex
 % indices making up the crease after subdivision.  refineVertices2 is the
-% new list of vertices to refine if you want to continue.
+% new list of vertices to refine if you want to continue subdivision: it
+% consists of the input refineVertices as well as all new vertices bounding
+% the refinement region.  It does not include the few extra subdivided
+% vertices outside the refinement region.
 
 import VVMesh.*
 
 numOriginalVertices = size(vertices,1);
 
-[VV2, vertices2, T, perturbFlags] = loopRefine(VV, vertices, refineVertices);
+[VV2, ~, T, perturbFlags] = loopRefine(VV, vertices, refineVertices);
 % ok that was the easy part.
 
 refineVertices = union(refineVertices, ...
@@ -65,7 +72,6 @@ for cc = 1:numCreases
 end
 
 vertices2 = T * vertices;
-
 
 
 function [refined, T] = refinedCrease(crease, perturbFlags, VV, VV2)

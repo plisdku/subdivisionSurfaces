@@ -1,6 +1,6 @@
-function [VV2 T vertices2 perturbFlags] = loopRefine(VV, vertices, ...
+function [VV2 vertices2 T perturbFlags] = loopRefine(VV, vertices, ...
     refineVertices, varargin)
-% [outVV T refinedVertices inheritance] = loopRefine(VV, vertices)
+% [outVV outVertices T perturbFlags] = loopRefine(VV, vertices)
 %
 % Mesh refinement step in Loop subdivision.  Does not perturb
 % vertices--only handles the refinement step!  (New mid-edge vertices are
@@ -8,17 +8,16 @@ function [VV2 T vertices2 perturbFlags] = loopRefine(VV, vertices, ...
 %
 % outVV is the refined vertex-vertex topology.
 %
+% outVertices contains an unsmoothed refined set of vertices.
+%
 % T is the matrix of weights to perturb the vertices by.  To accomplish
 % the perturbation you can set vertices2 = T*vertices yourself.
 %
-% vertices2 contains an unsmoothed refined set of vertices.
-%
-% inheritance is a sparse matrix containing the pairs of original vertex
-% indices that gave rise to each split vertex.  inheritance(vNew) = [v1 v2]
-% means that vNew split the edge from v1 to v2.
-%
 % loopRefine(VV, vertices, refineVertices) will restrict the refinement
 % region, as for adaptive refinement.
+%
+% perturbFlags will be valued true for each vertex that should be allowed
+% to move in subdivision.  This is for adaptive refinement with creases.
 % 
 
 import VVMesh.*
