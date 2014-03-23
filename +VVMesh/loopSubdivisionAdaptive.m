@@ -55,7 +55,7 @@ for cc = 1:numCreases
         end
         
         [crease2 T_crease] = refinedCrease(crease, creasePerturbFlags, ...
-            VV, VV2);
+            VV, VV2); 
         
         T(crease2,:) = 0;
         T = T + T_crease;
