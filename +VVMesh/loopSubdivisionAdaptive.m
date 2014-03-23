@@ -18,7 +18,7 @@ import VVMesh.*
 
 numOriginalVertices = size(vertices,1);
 
-[VV2, T, vertices2, perturbFlags] = loopRefine(VV, vertices, refineVertices);
+[VV2, vertices2, T, perturbFlags] = loopRefine(VV, vertices, refineVertices);
 % ok that was the easy part.
 
 refineVertices = union(refineVertices, ...
@@ -44,22 +44,15 @@ for cc = 1:numCreases
         T(crease,:) = 0;
         T(crease, crease) = 1.0;
     
-    elseif crease(1) == crease(end) % Boundary loop
+    else
         creasePerturbFlags = perturbFlags(crease);
         % the boundary loop might be fixed externally at the "endpoints",
         % so don't set the ends to be movable!!
         %creasePerturbFlags([1 end]) = true;
         
-        [crease2 T_crease] = refinedCrease(crease, creasePerturbFlags, ...
-            VV, VV2);
-        
-        T(crease2,:) = 0;
-        T = T + T_crease;
-    else
-        creasePerturbFlags = perturbFlags(crease);
-        
-        % only fixed ends make sense.  i think.
-        creasePerturbFlags([1 end]) = false;
+        if crease(1) ~= crease(end)
+            creasePerturbFlags([1 end]) = false;
+        end
         
         [crease2 T_crease] = refinedCrease(crease, creasePerturbFlags, ...
             VV, VV2);
@@ -71,7 +64,7 @@ for cc = 1:numCreases
     varargout{cc} = crease2;
 end
 
-%vertices2 = T * vertices;
+vertices2 = T * vertices;
 
 
 
