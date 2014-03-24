@@ -23,14 +23,16 @@ if makePlots
     figNum = gcf;
 end
 
-if nargin < 3
+if nargin < 3 || isempty(costFunction)
     minLength = 5;
     costFunction = @(vv, ww, VV, verts) ...
         minLength^2 - sum( (verts(vv,:)-verts(ww,:)).^2 );
+    assert(~isempty(costFunction(1,1,VV,vertices)));
 elseif isnumeric(costFunction)
     minLength = costFunction;
     costFunction = @(vv, ww, VV, verts) ...
         minLength^2 - sum( (verts(vv,:)-verts(ww,:)).^2 );
+    assert(~isempty(costFunction(1,1,VV,vertices)));
 end
 
 if nargin < 4
@@ -93,6 +95,8 @@ for vv = 1:numVertices
 end
 
 nEdge = currEdge-1;
+
+%fprintf('Num scores > 0: %i\n', nnz(scores > 0));
 
 %% Make the priority queue: a heap
 
