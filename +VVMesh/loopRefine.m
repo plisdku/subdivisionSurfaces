@@ -1,4 +1,4 @@
-function [VV2, vertices2, T, perturbFlags, crease2] = loopRefine(VV, vertices, ...
+function [VV2, vertices2, T, perturbFlags, T_refine] = loopRefine(VV, vertices, ...
     refineVertices)
 % [outVV outVertices T perturbFlags] = loopRefine(VV, vertices)
 %
@@ -43,48 +43,10 @@ totalNeighbors = sum(numNeighbors);
 assert(rem(totalNeighbors,2) == 0);
 numEdges = totalNeighbors/2;
 
-%% A helper function.
-
-vertexOnBoundary = @(v) any(arrayfun(@(w) full(isEdgeOnBoundary(v,w,VV)), ...
-    full(VV(v, 1:numNeighbors(v)))));
 
 %% Add a vertex at the midpoint of each edge!
 
-vertices2 = vertices;
-VV2 = VV;
-
-vNew = numOriginalVertices + 1; % index of next new vertex!
-
-% Iterate over edges:
-%iSplit = find(splitAdjacentEdgeFlags);
-for v0 = 1:numOriginalVertices
-for jj = 1:numNeighbors(v0)
-    v1 = VV(v0,jj);
-        
-    if v0 < v1 % this step prevents processing an edge twice
-    if all(splitAdjacentEdgeFlags([v0 v1]))
-        
-        % Split the edge!
-        vertices2(vNew,:) = 0.5*(vertices(v0,:) + vertices(v1,:));
-        
-        % Edge is now (u w v).
-        %  u replaces v with w
-        %  v replaces u with w
-        %  w adds u and v (either order is ok, but I'll go v1-v0)
-        
-        VV2(v0, VV2(v0,:) == v1) = vNew; % v0 replaces v1 with vMid
-        VV2(v1, VV2(v1,:) == v0) = vNew; % v1 replaces v0 with vMid
-        VV2(vNew, 1) = v1; % vMid adds v0
-        VV2(vNew, 2) = v0; % vMid adds v1
-        
-        % and that concludes the addition of vertices; it's no longer a
-        % triangular mesh though!
-        
-        vNew = vNew + 1;
-    end
-    end
-end
-end
+[vertices2, VV2] = splitEdges(VV, vertices, splitAdjacentEdgeFlags, numNeighbors);
 
 numNeighbors2 = numNeighbors;
 numNeighbors2(numOriginalVertices+1:size(vertices2,1)) = 2;
@@ -99,19 +61,25 @@ checkSymmetry(VV2);
 % but it might end up smaller if the mesh has a boundary or when it's only
 % partially refined.
 
-
 % First handle the original vertices.
 
 numVertices = size(vertices2, 1);
 numNewVertices = numVertices - numOriginalVertices;
+T = spalloc(numVertices, numOriginalVertices, ...
+    numOriginalVertices + totalNeighbors + 4*numNewVertices);
+
+% The matrix that achieves mesh refinement is look like this!
+T_refine = sparse(1:numOriginalVertices, 1:numOriginalVertices, ...
+    ones(numOriginalVertices,1), numVertices, numOriginalVertices);
 
 perturbedVertices = union(refineVertices, ...
     neighborhood(refineVertices, VV2, 1, 2));
 perturbFlags = zeros(numVertices,1);
 perturbFlags(perturbedVertices) = true;
 
-T = spalloc(numVertices, numOriginalVertices, ...
-    numOriginalVertices + totalNeighbors + 4*numNewVertices);
+% A helper function.
+vertexOnBoundary = @(v) any(arrayfun(@(w) full(isEdgeOnBoundary(v,w,VV)), ...
+    full(VV(v, 1:numNeighbors(v)))));
 
 for vOld = 1:numOriginalVertices
     if vertexOnBoundary(vOld) || ~perturbFlags(vOld)
@@ -262,6 +230,9 @@ for vNew = numOriginalVertices+1:size(vertices2,1)
         T(vNew, [v0 v1]) = 0.375;
         T(vNew, [nextInTriangle(v1, v0, VV) nextInTriangle(v0, v1, VV)]) = 0.125;
     end
+    
+    % Refinement matrix is always like this.
+    T_refine(vNew, [v0 v1]) = 0.5;
 end
 
 %VV2_additional = sparse(newRows, newCols, newVals, ...
@@ -279,5 +250,46 @@ if ~all(abs(Tsums - 1.0) < 1e-6)
     error('T seems wrong.\n');
 end
 
+end
+
+
+function [vertices2, VV2] = splitEdges(VV, vertices, ...
+    splitAdjacentEdgeFlags, numNeighbors)
+    numOriginalVertices = size(VV,1);
+    vertices2 = vertices;
+    VV2 = VV;
+
+    vNew = numOriginalVertices + 1; % index of next new vertex!
+
+    % Iterate over edges:
+    %iSplit = find(splitAdjacentEdgeFlags);
+    for v0 = 1:numOriginalVertices
+    for jj = 1:numNeighbors(v0)
+        v1 = VV(v0,jj);
+
+        if v0 < v1 % this step prevents processing an edge twice
+        if all(splitAdjacentEdgeFlags([v0 v1]))
+
+            % Split the edge!
+            vertices2(vNew,:) = 0.5*(vertices(v0,:) + vertices(v1,:));
+
+            % Edge is now (u w v).
+            %  u replaces v with w
+            %  v replaces u with w
+            %  w adds u and v (either order is ok, but I'll go v1-v0)
+
+            VV2(v0, VV2(v0,:) == v1) = vNew; % v0 replaces v1 with vMid
+            VV2(v1, VV2(v1,:) == v0) = vNew; % v1 replaces v0 with vMid
+            VV2(vNew, 1) = v1; % vMid adds v0
+            VV2(vNew, 2) = v0; % vMid adds v1
+
+            % and that concludes the addition of vertices; it's no longer a
+            % triangular mesh though!
+
+            vNew = vNew + 1;
+        end
+        end
+    end
+    end
 end
 
