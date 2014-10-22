@@ -22,6 +22,8 @@ function [VV2, vertices2, T, perturbFlags, crease2] = loopRefine(VV, vertices, .
 
 import VVMesh.*
 
+checkForErrors = false;
+
 numOriginalVertices = size(VV,1);
 assert(size(vertices,1) == numOriginalVertices);
 
@@ -234,10 +236,12 @@ for vNew = numOriginalVertices+1:size(vertices2,1)
         
     end
     
-    assert(~ismember(vNew, neighbors01));
-    assert(~ismember(vNew, neighbors10));
-    assert(numel(unique(neighbors01)) == numel(neighbors01));
-    assert(numel(unique(neighbors10)) == numel(neighbors10));
+    if checkForErrors
+        assert(~ismember(vNew, neighbors01));
+        assert(~ismember(vNew, neighbors10));
+        assert(numel(unique(neighbors01)) == numel(neighbors01));
+        assert(numel(unique(neighbors10)) == numel(neighbors10));
+    end
     
     % All neighbors for the vertex!!
     
@@ -245,8 +249,10 @@ for vNew = numOriginalVertices+1:size(vertices2,1)
     VV2(vNew, 1:(numel(neighbors01) + numel(neighbors10))) = ...
         [neighbors01 neighbors10];
     
-    if numel(unique([neighbors01 neighbors10])) <= 2
-        error('poop.');
+    if checkForErrors
+        if numel(unique([neighbors01 neighbors10])) <= 2
+            error('poop.');
+        end
     end
     
     % Now the T-matrix:
