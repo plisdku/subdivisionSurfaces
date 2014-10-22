@@ -1,5 +1,5 @@
-function [VV2 vertices2 T perturbFlags] = loopRefine(VV, vertices, ...
-    refineVertices, varargin)
+function [VV2, vertices2, T, perturbFlags, crease2] = loopRefine(VV, vertices, ...
+    refineVertices)
 % [outVV outVertices T perturbFlags] = loopRefine(VV, vertices)
 %
 % Mesh refinement step in Loop subdivision.  Does not perturb
@@ -143,7 +143,13 @@ isOld = @(vIndex) vIndex <= numOriginalVertices;
 % For each NEW vertex:
 for vNew = numOriginalVertices+1:size(vertices2,1)
     
-    %printVert(ii);
+    %if mod(vNew, 1000) == 0
+    %    fprintf('vNew = %i\n', vNew);
+    %end
+    
+    %if vNew > size(vertices2,1) || size(vertices2,1) > 17000
+    %    keyboard
+    %end
     
     boundaryFlag = false;
     
