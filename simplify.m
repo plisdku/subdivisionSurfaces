@@ -121,7 +121,7 @@ numDeleted = 0;
 
 T = speye(numVertices);
 
-%% While the top score > 1, keep swapping edges.
+%% While the top score > 0, keep swapping edges.
 p3 = @(v, varargin) plot3(v(:,1), v(:,2), v(:,3), varargin{:});
 
 VV2 = VV;
@@ -193,8 +193,8 @@ while ~done
             subplot(221); cla
             plotSomeVV(VV2, v2, neighborhood([vv;ww], VV2), 'bo-');
             hold on; p3(v2([vv;ww],:), 'ro', 'LineWidth', 4);
-            plotVVLabels(VV2, v2, neighborhood([vv;ww],VV2), ...
-                'FontSize', 18);
+            %plotVVLabels(VV2, v2, neighborhood([vv;ww],VV2), ...
+            %    'FontSize', 18);
             axis vis3d; view(3)
             ax = axis;
             ax1 = gca;
@@ -289,8 +289,8 @@ while ~done
             subplot(222); cla
             plotSomeVV(VV2, v2, [vv; neighborhood(vv, VV2)], 'bo-');
             hold on; p3(v2(vv,:), 'ro', 'LineWidth', 4);
-            plotVVLabels(VV2, v2, [vv; neighborhood(vv,VV2)], ...
-                'FontSize', 18);
+            %plotVVLabels(VV2, v2, [vv; neighborhood(vv,VV2)], ...
+            %    'FontSize', 18);
             axis vis3d; view(3)
             axis(ax);
             ax2 = gca;
@@ -299,15 +299,16 @@ while ~done
             plotVV(VV2, v2, 'bo-');
             hold on; p3(v2(vv,:), 'ro', 'LineWidth', 4);
             p3([pv0; v2(ww,:)], 'rx', 'LineWidth', 4);
-            plotVVLabels(VV2, v2, [vv; neighborhood(vv,VV2)], ...
-                'FontSize', 18);
+            %plotVVLabels(VV2, v2, [vv; neighborhood(vv,VV2)], ...
+            %    'FontSize', 18);
             axis image vis3d; view(3)
             %axis(ax)
             
-            linkprop([ax1 ax2], {'CameraPosition', 'CameraTarget', ...
-                'CameraUpVector', 'CameraViewAngle'});
+            %linkprop([ax1 ax2], {'CameraPosition', 'CameraTarget', ...
+            %    'CameraUpVector', 'CameraViewAngle'});
             
-            pause(0.001)
+            pause
+            %pause(0.001)
         end
         
         if checkForErrors, checkHeapIndex(); end
