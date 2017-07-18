@@ -13,7 +13,7 @@ edgeVerticesSorted = sort(edgeVertices, 2);
 [cc, iaa, icc] = unique(edgeVerticesSorted, 'rows');
 %%
 edgeVerticesUnique = edgeVertices(iaa,:);
-faceEdgesUnique = icc(faceEdges);
+faceEdgesUnique = reshape(icc(faceEdges), numFaces, 3);
 
 %% Get orientation of each edge-use of each face!
 faceEdgeOrientations = 0*faceEdgesUnique;
